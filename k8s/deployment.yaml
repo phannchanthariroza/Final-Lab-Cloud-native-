@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: student-core
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: student-core }
+  template:
+    metadata:
+      labels: { app: student-core }
+    spec:
+      containers:
+        - name: api-gateway
+          image: student-api-gateway:latest
+          imagePullPolicy: Never
+          ports: [{ containerPort: 5000 }]
+          env:
+            - name: REGISTER_SERVICE_URL
+              value: http://localhost:5001
+            - name: SEARCH_SERVICE_URL
+              value: http://student-search:5002
+        - name: registration
+          image: student-registration:latest
+          imagePullPolicy: Never
+          ports: [{ containerPort: 5001 }]
+          env:
+            - name: MONGO_URI
+              valueFrom: { secretKeyRef: { name: student-db-secret, key: mongo-uri } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: student-search
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: student-search }
+  template:
+    metadata:
+      labels: { app: student-search }
+    spec:
+      containers:
+        - name: search
+          image: student-search:latest
+          imagePullPolicy: Never
+          ports: [{ containerPort: 5002 }]
+          env:
+            - name: MONGO_URI
+              valueFrom: { secretKeyRef: { name: student-db-secret, key: mongo-uri } }
